@@ -49,5 +49,7 @@ def search(request):
     if query in all_articles:
         return redirect('encyclopedia:article', article_name=query)
 
-    all_articles = [x for x in all_articles if query in x]
-    return HttpResponse(f"matches are {all_articles}")
+    matching_articles = [x for x in util.list_entries() if query in x.lower()]
+    return render(request, "encyclopedia/search.html", {
+        "results": matching_articles
+    })
