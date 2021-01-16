@@ -8,8 +8,14 @@ from . import util
 from random import choice
 
 
-class SearchForm(forms.Form):
-    search = forms.CharField(label="q")
+class NewArticleForm(forms.Form):
+    title = forms.CharField(label="Article Name")
+    article_body = forms.CharField(widget=forms.Textarea, label="Article Body")
+
+
+class EditArticleForm(forms.Form):
+    article_name = forms.CharField(widget=forms.HiddenInput)
+    article_body = forms.CharField(widget=forms.Textarea, label=False)
 
 
 def getHTMLfromMarkdown(article_markdown):
@@ -43,6 +49,23 @@ def random(request):
     return redirect('encyclopedia:article', article_name=selected_page)
 
 
+def create(request):
+    if request.method == "POST":
+        form = NewArticleForm(request.POST)
+        if form.is_valid():
+            article_title = form.cleaned_data["title"]
+            article_body = form.cleaned_data["article_body"]
+            util.save_entry(article_title, article_body)
+            return redirect('encyclopedia:article', article_name=article_title)
+        else:
+            return render(request, "encyclopedia/create.html", {
+                "form": form
+            })
+    return render(request, "encyclopedia/create.html", {
+        "form": NewArticleForm()
+    })
+
+
 def search(request):
     query = request.GET.get('q').lower()
     all_articles = [x.lower() for x in util.list_entries()]
@@ -53,3 +76,30 @@ def search(request):
     return render(request, "encyclopedia/search.html", {
         "results": matching_articles
     })
+
+
+def edit(request):
+    if request.method == "POST":
+        form = EditArticleForm(request.POST)
+        if form.is_valid():
+            article_name = form.cleaned_data["article_name"]
+            article_body = form.cleaned_data["article_body"]
+            util.save_entry(article_name, article_body)
+            return redirect('encyclopedia:article', article_name=article_name)
+        else:
+            return render(request, "encyclopedia/edit.html", {
+                "form": form
+            })
+    elif request.method == "GET":
+        article_name = request.GET.get('an')
+        article_body = util.get_entry(article_name)
+        return render(request, "encyclopedia/edit.html", {
+            "form": EditArticleForm({
+                "article_name": article_name,
+                "article_body": article_body
+            }),
+            "article_name": article_name,
+            "article_body": article_body
+        })
+    else:
+        redirect('encyclopedia:index')
