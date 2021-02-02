@@ -4,11 +4,13 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 
-from .models import User
+from .models import User, Auction
 
 
 def index(request):
-    return render(request, "auctions/index.html")
+    return render(request, "auctions/index.html", {
+        "all_auctions": Auction.objects.all()
+    })
 
 
 def categories(request):
@@ -16,7 +18,12 @@ def categories(request):
 
 
 def watchlist(request):
-    return render(request, "auctions/watchlist.html")
+    if not request.user.is_authenticated:
+        return HttpResponseRedirect(reverse("login"))
+    current_user = request.user
+    return render(request, "auctions/watchlist.html", {
+        "watched_listings": current_user.watched_listings.all()
+    })
 
 
 def create(request):
